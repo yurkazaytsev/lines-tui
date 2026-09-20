@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# lines — Classic 9x9 Color Lines TUI in bare bash.
+set -uo pipefail
+
+ROOT="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck disable=SC1091
+source "$ROOT/lib/state.sh"
+# shellcheck disable=SC1091
+source "$ROOT/lib/spawn.sh"
+# shellcheck disable=SC1091
+source "$ROOT/lib/path.sh"
+# shellcheck disable=SC1091
+source "$ROOT/lib/clear.sh"
+# shellcheck disable=SC1091
+source "$ROOT/lib/render.sh"
+# shellcheck disable=SC1091
+source "$ROOT/lib/input.sh"
+# shellcheck disable=SC1091
+source "$ROOT/lib/main.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: ./lines [--seed N] [--moves src:dst,...] [--dump] [--ascii] [--help]
+  No args            interactive game: arrows move cursor, space selects
+                     (or column a-i + row 1-9 in either order, no Enter;
+                     Esc cancels, q=quits, n=new)
+  --seed N           deterministic RNG for testing
+  --moves a1:b2,...  headless: apply moves, print dump (implies --dump)
+  --dump             print board as text, no TUI (with --seed for repro)
+  --ascii            force ASCII glyphs (O / .)
+EOF
+}
+
+SEED_ARG=""
+MOVES=""
+DUMP=0
+while (( $# > 0 )); do
+  case $1 in
+    --seed) SEED_ARG=${2:-}; shift 2;;
+    --seed=*) SEED_ARG=${1#--seed=}; shift;;
+    --moves) MOVES=${2:-}; shift 2;;
+    --moves=*) MOVES=${1#--moves=}; shift;;
+    --dump) DUMP=1; shift;;
+    --ascii) LINES_ASCII=1; export LINES_ASCII; shift;;
+    -h|--help) usage; exit 0;;
+    *) printf 'unknown arg: %s\n' "$1" >&2; usage >&2; exit 2;;
+  esac
+done
+
+if [[ -n "$SEED_ARG" ]]; then
+  [[ $SEED_ARG =~ ^[0-9]+$ ]] || { printf 'bad --seed: %s\n' "$SEED_ARG" >&2; exit 2; }
+  SEED=$SEED_ARG
+fi
+if [[ -n "${LINES_ASCII:-}" ]]; then ASCII_MODE=1; fi
+
+cleanup() {
+  term_cleanup
+}
+trap cleanup EXIT INT TERM
+trap 'NEED_REDRAW=1' WINCH
+
+init_board
+
+if [[ -n "$MOVES" ]]; then DUMP=1; fi
+
+if (( DUMP )) || [[ -n "$MOVES" ]]; then
+  if [[ -n "$MOVES" ]]; then run_headless "$MOVES" || exit 1; fi
+  dump_board
+  exit 0
+fi
+
+if [[ ! -t 0 || ! -t 1 ]]; then
+  printf 'no TTY: use --dump/--moves for headless mode\n' >&2
+  dump_board
+  exit 0
+fi
+
+term_setup
+game_interactive
