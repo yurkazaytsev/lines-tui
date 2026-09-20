@@ -1,5 +1,8 @@
 # Lines
 
+> Built with [opencode](https://opencode.ai) using Muse Spark
+> (`opencode/muse-spark-1.3-contributor-free`).
+
 Classic Color Lines game as a terminal UI in bare Bash. No dependencies beyond
 `bash` 5.x, `tput` (ncurses) and `stty` (coreutils).
 
