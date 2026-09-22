@@ -88,6 +88,16 @@ build_frame() {
   # Column header (pending column in brackets, cursor column in <>)
   out+='    '
   local c r hl rowlabel pend is_cur
+  local tl tr bl br hh vv hline
+  if (( ASCII_MODE )); then
+    tl='+'; tr='+'; bl='+'; br='+'; hh='-'; vv='|'
+  else
+    tl='┌'; tr='┐'; bl='└'; br='┘'; hh='─'; vv='│'
+  fi
+  hline=''
+  for (( c = 0; c < 27; c++ )); do
+    hline+="$hh"
+  done
   for (( c = 0; c < 9; c++ )); do
     if (( c == PENDING_COL )); then
       hl="[${COLNAMES:$c:1}]"
@@ -99,6 +109,7 @@ build_frame() {
     out+="$hl"
   done
   out+=$'\r\n'
+  out+="    ${tl}${hline}${tr}"$'\r\n'
   for (( r = 0; r < 9; r++ )); do
     if (( r == PENDING_ROW )); then
       rowlabel="[$(( r + 1 ))] "
@@ -108,6 +119,7 @@ build_frame() {
       rowlabel=$(printf '%2d  ' $(( r + 1 )))
     fi
     out+="$rowlabel"
+    out+="$vv"
     for (( c = 0; c < 9; c++ )); do
       idx=$(( r * 9 + c ))
       v=${BOARD[$idx]:-0}
@@ -141,8 +153,9 @@ build_frame() {
       fi
       out+="$cell"
     done
-    out+=$'\r\n'
+    out+="$vv"$'\r\n'
   done
+  out+="    ${bl}${hline}${br}"$'\r\n'
   out+=$'\r\n'
   if (( TERM_LINES < 24 || TERM_COLS < 36 )); then
     out+='(terminal too small — enlarge to 36x24)'$'\r\n'
