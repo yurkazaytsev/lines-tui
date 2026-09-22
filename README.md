@@ -15,6 +15,27 @@ Classic Color Lines game as a terminal UI in bare Bash. No dependencies beyond
 The game runs from any working directory. It needs a real TTY; without one it
 prints the board as text and exits (see headless mode below).
 
+## Board
+
+```text
+LINES  score: 0   next:  ● ● ●
+
+     a  b  c  d <e> f  g  h  i
+    ┌───────────────────────────┐
+ 1  │ ·  ·  ·  ·  ·  ·  ·  ●  · │
+ 2  │ ·  ·  ·  ·  ·  ·  ·  ·  · │
+ 3  │ ·  ●  ·  ·  ●  ·  ·  ·  · │
+ 4  │ ·  ·  ·  ·  ·  ·  ·  ·  · │
+<5> │ ·  ·  ·  · <·> ·  ·  ·  · │
+ 6  │ ·  ·  ·  ●  ·  ·  ·  ·  · │
+ 7  │ ●  ·  ·  ·  ·  ·  ·  ·  · │
+ 8  │ ·  ·  ·  ·  ·  ·  ·  ·  · │
+ 9  │ ·  ·  ·  ·  ·  ·  ·  ·  · │
+    └───────────────────────────┘
+```
+
+`●` ball (colored in the terminal), `·` empty, `<·>` cursor, `[●]` selected.
+
 ## How to play
 
 A 9x9 board fills with colored balls. Move balls to form lines of 5 or more

@@ -64,12 +64,12 @@ color_code() {
 }
 
 colored_ball() {
-  # $1=color -> appends bold colored glyph to var named in $2
-  # Bold is part of the assumed palette (8 colors + bold) and renders
-  # noticeably thicker/larger than the dim 30-37 codes on most terminals.
+  # $1=color -> appends calm (non-bold) colored glyph to var named in $2.
+  # Stays within the assumed palette (8 colors, no truecolor): plain 30-37
+  # codes are noticeably dimmer/calmer than bold 1;30-37 on most terminals.
   local code
   code=$(color_code "$1")
-  printf -v "$2" '\x1b[1;%sm%s\x1b[0m' "$code" "$(ball_glyph)"
+  printf -v "$2" '\x1b[%sm%s\x1b[0m' "$code" "$(ball_glyph)"
 }
 
 # build_frame — composes $FRAME (single-buffered full screen).
