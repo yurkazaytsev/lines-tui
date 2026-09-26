@@ -36,6 +36,22 @@ LINES  score: 0   next:  ● ● ●
 
 `●` ball (colored in the terminal), `·` empty, `<·>` cursor, `[●]` selected.
 
+With `--shapes` each color also gets its own glyph, so the game stays
+playable where colors are unavailable:
+
+| Color                  | Shape glyph | ASCII glyph |
+| ---------------------- | ----------- | ----------- |
+| 1 red                  | ●           | O           |
+| 2 green                | ◆           | D           |
+| 3 yellow               | ▲           | ^           |
+| 4 blue                 | ■           | #           |
+| 5 magenta              | ★           | *           |
+| 6 cyan                 | ✚           | %           |
+| 7 white                | ✖           | X           |
+
+(`D` is uppercase — the board columns stay lowercase `a`–`i`. `%` stands
+in for `+` because `+` already marks the pending row/column.)
+
 ## How to play
 
 A 9x9 board fills with colored balls. Move balls to form lines of 5 or more
@@ -65,7 +81,7 @@ The selected ball is shown as `[●]`. The cursor starts in the center (e5).
 ## Options
 
 ```sh
-./lines [--seed N] [--moves src:dst,...] [--dump] [--ascii] [--help]
+./lines [--seed N] [--moves src:dst,...] [--dump] [--ascii] [--shapes] [--no-color] [--help]
 ```
 
 | Flag | Effect |
@@ -74,7 +90,17 @@ The selected ball is shown as `[●]`. The cursor starts in the center (e5).
 | `--moves a1:b2,...` | Headless: apply moves, print the board (implies `--dump`) |
 | `--dump` | Print board as text, no TUI (combine with `--seed` to reproduce a game) |
 | `--ascii` | Force ASCII glyphs (`O` / `.` instead of `●` / `·`) |
+| `--shapes` | Distinct shape per color (see table above; env `LINES_SHAPES=1`) |
+| `--no-color` | Emit no ANSI color escapes (env `LINES_NO_COLOR=1` or standard `NO_COLOR`) |
 | `--help` | Print usage |
+
+No-color terminals (`TERM=dumb`, or fewer than 8 colors per `tput colors`)
+automatically get `--shapes --no-color`, so the game plays out of the box.
+Combine the flags explicitly for the same effect on any terminal:
+
+```sh
+./lines --shapes --no-color
+```
 
 Examples:
 
@@ -82,12 +108,16 @@ Examples:
 ./lines --seed 1 --dump
 ./lines --seed 1 --moves a7:b7
 LINES_ASCII=1 ./lines
+./lines --shapes --no-color
+LINES_SHAPES=1 LINES_NO_COLOR=1 ./lines
 ```
 
 ## Requirements
 
 - Bash 5.x, `tput`, `stty` (verified with bash 5.3)
-- A terminal with at least 36x24 cells, UTF-8 locale, 8 colors + bold
+- A terminal with at least 36x24 cells, UTF-8 locale; color terminals use
+  8 colors + bold, no-color terminals play via `--shapes --no-color`
+  (auto-enabled when colors are unavailable)
 - No Python/Go/Rust, no dialog/whiptail/fzf, no build step, no lockfiles
 
 ## Development

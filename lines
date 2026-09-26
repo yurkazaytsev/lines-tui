@@ -20,7 +20,7 @@ source "$ROOT/lib/main.sh"
 
 usage() {
   cat <<'EOF'
-Usage: ./lines [--seed N] [--moves src:dst,...] [--dump] [--ascii] [--help]
+Usage: ./lines [--seed N] [--moves src:dst,...] [--dump] [--ascii] [--shapes] [--no-color] [--help]
   No args            interactive game: arrows move cursor, space selects
                      (or column a-i + row 1-9 in either order, no Enter;
                      Esc cancels, q=quits, n=new)
@@ -28,6 +28,10 @@ Usage: ./lines [--seed N] [--moves src:dst,...] [--dump] [--ascii] [--help]
   --moves a1:b2,...  headless: apply moves, print dump (implies --dump)
   --dump             print board as text, no TUI (with --seed for repro)
   --ascii            force ASCII glyphs (O / .)
+  --shapes           distinct shape per color (playable without color;
+                     env LINES_SHAPES=1)
+  --no-color         emit no ANSI color escapes (env LINES_NO_COLOR=1
+                     or standard NO_COLOR)
 EOF
 }
 
@@ -42,6 +46,8 @@ while (( $# > 0 )); do
     --moves=*) MOVES=${1#--moves=}; shift;;
     --dump) DUMP=1; shift;;
     --ascii) LINES_ASCII=1; export LINES_ASCII; shift;;
+    --shapes) LINES_SHAPES=1; export LINES_SHAPES; shift;;
+    --no-color) LINES_NO_COLOR=1; export LINES_NO_COLOR; shift;;
     -h|--help) usage; exit 0;;
     *) printf 'unknown arg: %s\n' "$1" >&2; usage >&2; exit 2;;
   esac
@@ -52,6 +58,22 @@ if [[ -n "$SEED_ARG" ]]; then
   SEED=$SEED_ARG
 fi
 if [[ -n "${LINES_ASCII:-}" ]]; then ASCII_MODE=1; fi
+if [[ -n "${LINES_SHAPES:-}" ]]; then SHAPES_MODE=1; fi
+if [[ -n "${LINES_NO_COLOR:-}" || -n "${NO_COLOR+set}" ]]; then NO_COLOR_MODE=1; fi
+# No color support detected (dumb terminal or < 8 colors): fall back to
+# shapes without color so the game stays playable. Explicit flags win —
+# this only fires when neither mode was requested.
+if (( ! SHAPES_MODE && ! NO_COLOR_MODE )) && [[ -t 1 ]]; then
+  if [[ "${TERM:-dumb}" == "dumb" ]]; then
+    SHAPES_MODE=1; NO_COLOR_MODE=1
+  else
+    _ncolors=$(tput colors 2>/dev/null || printf '0')
+    if ! [[ "$_ncolors" =~ ^[0-9]+$ ]] || (( _ncolors < 8 )); then
+      SHAPES_MODE=1; NO_COLOR_MODE=1
+    fi
+    unset _ncolors
+  fi
+fi
 
 cleanup() {
   term_cleanup

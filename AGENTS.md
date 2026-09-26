@@ -19,5 +19,5 @@
 - Input: put terminal in raw-ish mode once (`stty -echo -icanon min 1 time 0`), read with `IFS= read -rsn1 key` + handle `\x1b[` escape sequences for arrows; never `read -p` / line-buffered `read`.
 - Rendering: build frame in var, single `printf '%s'` per frame. No `clear` in loop, no `echo -e` (use `printf`), no per-cell `tput` calls in hot path.
 - Resize: trap `WINCH`, re-read `lines cols` via `tput lines/cols`, re-clamp cursor and redraw; never cache size at startup only.
-- Assume only 8 colors + bold; no truecolor, no mouse, no reverse video (broken on some terms — signal selection with bracket glyphs `[●]`/`(●)`/`+`, never `\x1b[7m`), no unicode beyond `●○│─┌┐└┘` with `LC_ALL=C.UTF-8` fallback to ASCII if garbled.
+- Assume only 8 colors + bold; no truecolor, no mouse, no reverse video (broken on some terms — signal selection with bracket glyphs `[●]`/`(●)`/`+`, never `\x1b[7m`), ball/shape unicode is `●◆▲■★✚✖` (ASCII fallback `OD^#*%X`) plus `●○│─┌┐└┘` with `LC_ALL=C.UTF-8` fallback to ASCII if garbled. `--no-color` emits no SGR color escapes; shapes mode keeps the game playable without color.
 - Test interactively under a pty: `expect` is installed — drive `./lines` with `send`/`expect` (pipes can't reproduce raw-mode/`read -t` timing bugs).

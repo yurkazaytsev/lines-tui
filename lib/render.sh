@@ -15,6 +15,8 @@ PENDING_ROW=-1
 CUR_R=4
 CUR_C=4
 ASCII_MODE=0
+SHAPES_MODE=0
+NO_COLOR_MODE=0
 
 term_size() {
   TERM_LINES=$(tput lines 2>/dev/null || printf '24')
@@ -25,6 +27,8 @@ term_setup() {
   [[ -t 0 && -t 1 ]] || return 0
   ORIG_STTY=$(stty -g)
   if [[ -n "${LINES_ASCII:-}" ]]; then ASCII_MODE=1; fi
+  if [[ -n "${LINES_SHAPES:-}" ]]; then SHAPES_MODE=1; fi
+  if [[ -n "${LINES_NO_COLOR:-}" || -n "${NO_COLOR+set}" ]]; then NO_COLOR_MODE=1; fi
   # Force UTF-8 attempt; ASCII fallback via LINES_ASCII=1.
   export LC_ALL=${LC_ALL:-C.UTF-8}
   printf '\x1b[?1049h'  # alt screen
@@ -47,11 +51,33 @@ term_cleanup() {
 }
 
 ball_glyph() {
+  # $1 (optional) = color 1..7: in shapes mode each color gets its own glyph.
+  if (( SHAPES_MODE )) && [[ -n "${1:-}" ]]; then shape_for "$1"; return; fi
   (( ASCII_MODE )) && printf 'O' || printf '●'
 }
 
 empty_glyph() {
   (( ASCII_MODE )) && printf '.' || printf '·'
+}
+
+# shape_for color -> prints the glyph for that color in shapes mode.
+# UTF-8: distinct silhouettes (circle/diamond/triangle/square/star/plus/cross).
+# ASCII: distinct safe chars (avoids a-i columns, 0-9 rows, []()<>|+-. borders
+# and the pending "+" marker, so "+" itself is never a ball; "%" stands in).
+shape_for() {
+  if (( ASCII_MODE )); then
+    case $1 in
+      1) printf 'O';; 2) printf 'D';; 3) printf '^';;
+      4) printf '#';; 5) printf '*';; 6) printf '%%';;
+      *) printf 'X';;
+    esac
+  else
+    case $1 in
+      1) printf '●';; 2) printf '◆';; 3) printf '▲';;
+      4) printf '■';; 5) printf '★';; 6) printf '✚';;
+      *) printf '✖';;
+    esac
+  fi
 }
 
 # fg code for color 1..7
@@ -64,12 +90,15 @@ color_code() {
 }
 
 colored_ball() {
-  # $1=color -> appends calm (non-bold) colored glyph to var named in $2.
+  # $1=color -> appends glyph to var named in $2. In shapes mode the glyph
+  # itself identifies the color; in no-color mode no ANSI escapes are emitted.
   # Stays within the assumed palette (8 colors, no truecolor): plain 30-37
   # codes are noticeably dimmer/calmer than bold 1;30-37 on most terminals.
-  local code
+  local glyph code
+  if (( SHAPES_MODE )); then glyph=$(shape_for "$1"); else glyph=$(ball_glyph); fi
+  if (( NO_COLOR_MODE )); then printf -v "$2" '%s' "$glyph"; return; fi
   code=$(color_code "$1")
-  printf -v "$2" '\x1b[%sm%s\x1b[0m' "$code" "$(ball_glyph)"
+  printf -v "$2" '\x1b[%sm%s\x1b[0m' "$code" "$glyph"
 }
 
 # build_frame — composes $FRAME (single-buffered full screen).
